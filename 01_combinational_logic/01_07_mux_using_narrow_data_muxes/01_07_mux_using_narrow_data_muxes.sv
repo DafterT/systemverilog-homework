@@ -28,6 +28,7 @@ module mux_4_1
   // Task:
   // Implement mux_4_1 with 4-bit data
   // using two instances of mux_4_1_width_2 with 2-bit data
-
+  mux_4_1_width_2 b01_inst(d0[1:0], d1[1:0], d2[1:0], d3[1:0], sel, y[1:0]);
+  mux_4_1_width_2 b23_inst(d0[3:2], d1[3:2], d2[3:2], d3[3:2], sel, y[3:2]);
 
 endmodule

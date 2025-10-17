@@ -27,6 +27,6 @@ module and_gate_using_mux
   // Task:
   // Implement and gate using instance(s) of mux,
   // constants 0 and 1, and wire connections
-
+  mux mux_inst ('0, b, a, o);
 
 endmodule
