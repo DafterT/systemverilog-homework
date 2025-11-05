@@ -29,5 +29,26 @@ module parallel_to_serial
     // Note:
     // Check the waveform diagram in the README for better understanding.
 
+    logic [width - 1: 0] data;
+    logic [$clog2(width) - 1:0] counter;
+
+    always_ff @(posedge clk) begin
+        if (rst) begin
+            data <= '0;
+            counter <= '0;
+        end else begin
+            if (counter == '0 & parallel_valid) begin
+                data <= {1'b0, parallel_data[width-1 : 1]};
+                counter <= width - 1;
+            end else if (counter != 0) begin
+                data <= {1'b0, data[width-1 :1]};
+                counter <= counter - 1;
+            end
+        end
+    end 
+
+    assign serial_data = parallel_valid ? parallel_data[0] : data[0];
+    assign serial_valid = parallel_valid | busy;
+    assign busy = counter != '0;
 
 endmodule

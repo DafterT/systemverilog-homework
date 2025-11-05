@@ -113,7 +113,7 @@ module testbench;
             // Uncomment the following line
             // to generate a VCD file and analyze it using GTKwave or Surfer
 
-            // $dumpvars;
+            $dumpvars;
         `endif
 
         parallel_valid <= 1'b0;
