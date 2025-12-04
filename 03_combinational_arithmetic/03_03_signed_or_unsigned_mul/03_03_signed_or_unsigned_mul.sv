@@ -44,13 +44,23 @@ endmodule
 // of the multiplication depending on the 'signed_mul' input bit.
 
 module signed_or_unsigned_mul
-# (
-  parameter n = 8
+#(
+  parameter int n = 8
 )
 (
-  input  [    n - 1:0] a, b,
-  input                signed_mul,
-  output [2 * n - 1:0] res
+  input  logic [    n-1:0] a, b,
+  input  logic             signed_mul,
+  output logic [2*n-1:0]   res
 );
 
+  always_comb begin
+    if (signed_mul)
+      res = $signed(a) * $signed(b);
+    else
+      res = a * b;
+  end
+
 endmodule
+
+
+
