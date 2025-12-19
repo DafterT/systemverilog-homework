@@ -24,6 +24,33 @@ module double_tokens
     // Example:
     // a -> 10010011000110100001100100
     // b -> 11011011110111111001111110
+    logic [9:0] pending;
+    logic [7:0] run_len;
 
+    assign b = rst ? 1'b0 : ((pending != 0) || a);
+
+    always_ff @(posedge clk) begin
+        if (rst) begin
+            pending  <= '0;
+            run_len  <= '0;
+            overflow <= 1'b0;
+        end else begin
+            if (a) begin
+                pending <= pending + 1'b1;
+            end else if (pending != 0) begin
+                pending <= pending - 1'b1;
+            end
+
+            if (a) begin
+                if (run_len < 8'd200) begin
+                    run_len <= run_len + 1'b1;
+                end
+            end else begin
+                run_len <= '0;
+            end
+
+            overflow <= overflow | (a && (run_len >= 8'd200));
+        end
+    end
 
 endmodule

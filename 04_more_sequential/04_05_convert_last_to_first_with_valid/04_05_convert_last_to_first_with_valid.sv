@@ -24,5 +24,18 @@ module conv_last_to_first
     //
     // See README for full description of the task with timing diagram.
 
+    logic first_pending;
+
+    assign down_valid = ~reset & up_valid;
+    assign down_first = down_valid ? first_pending : 1'b0;
+    assign down_data  = down_valid ? up_data : '0;
+
+    always_ff @(posedge clock) begin
+        if (reset) begin
+            first_pending <= 1'b1;
+        end else if (up_valid) begin
+            first_pending <= up_last;
+        end
+    end
 
 endmodule
