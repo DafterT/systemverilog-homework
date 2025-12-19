@@ -2,6 +2,20 @@
 
 #-----------------------------------------------------------------------------
 
+if [ "$OSTYPE" = "cygwin" ] ||
+   [ "$OSTYPE" = "msys"   ]
+then
+    default_icarus_install_path="/c/iverilog"
+
+    if ! command -v iverilog > /dev/null 2>&1 &&
+       [ -d "$default_icarus_install_path" ]
+    then
+        export PATH="${PATH:+$PATH:}$default_icarus_install_path/bin:$default_icarus_install_path/gtkwave/bin"
+    fi
+fi
+
+#-----------------------------------------------------------------------------
+
 waveform_viewer="gtkwave"
 # waveform_viewer="surfer"
 
@@ -267,7 +281,7 @@ simulate_rtl()
     extra_args=""
     choice=0
 
-    if [ -f tb.sv ]
+    if [ -f tb.sv ] || [ -f testbench.sv ]
     then
         # Testbench is in the same directory with the script (HW 05)
         extra_args="$extra_args ./*.sv"
