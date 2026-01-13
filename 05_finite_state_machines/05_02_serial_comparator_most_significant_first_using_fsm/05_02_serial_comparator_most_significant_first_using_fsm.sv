@@ -71,7 +71,6 @@ module serial_comparator_most_significant_first_using_fsm
   // but use the Finite State Machine to evaluate the result.
   // Most significant bits arrive first.
 
-  // States
   enum logic[2:0]
   {
      st_a_less_b    = 3'b100,
@@ -80,14 +79,9 @@ module serial_comparator_most_significant_first_using_fsm
   }
   state, new_state;
 
-  // State transition logic
   always_comb
   begin
     new_state = state;
-
-    // This lint warning is bogus because we assign the default value above
-    // verilator lint_off CASEINCOMPLETE
-
     case (state)
       st_equal       : if (~ a &   b) new_state = st_a_less_b;
                   else if (  a & ~ b) new_state = st_a_greater_b;
@@ -95,10 +89,8 @@ module serial_comparator_most_significant_first_using_fsm
       st_a_greater_b : new_state = st_a_greater_b;
     endcase
 
-    // verilator lint_on  CASEINCOMPLETE
   end
 
-  // Output logic
   assign { a_less_b, a_eq_b, a_greater_b } = new_state;
 
   always_ff @ (posedge clk)
