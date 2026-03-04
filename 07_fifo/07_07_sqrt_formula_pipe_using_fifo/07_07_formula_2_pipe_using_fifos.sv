@@ -34,7 +34,7 @@ module formula_2_pipe_using_fifos
     // of a pipelined isqrt module, which computes the integer square root.
     //
     // 3. Your solution should use FIFOs instead of shift registers
-    // which were used in 04_10_formula_2_pipe.sv.
+    // which were used in 06_04_formula_2_pipe.sv.
     //
     // You can read the discussion of this problem
     // in the article by Yuri Panchul published in

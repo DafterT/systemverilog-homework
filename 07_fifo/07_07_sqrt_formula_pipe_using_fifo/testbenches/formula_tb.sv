@@ -122,7 +122,7 @@ module formula_tb
         fork
         begin
             repeat (1000) @ (posedge clk);
-            $display ("%s FAIL: timeout!", test_id);
+            $display ("FAIL %s: timeout!", test_id);
             $finish;
         end
         join_none
@@ -302,7 +302,7 @@ module formula_tb
             begin
                 if (queue.size () == 0)
                 begin
-                    $display ("%s FAIL: unexpected result %0d",
+                    $display ("FAIL %s: unexpected result %0d",
                         test_id, res);
 
                     $finish;
@@ -319,7 +319,7 @@ module formula_tb
 
                     if (res !== res_expected)
                     begin
-                        $display ("%s FAIL: res mismatch. Expected %0d, actual %0d",
+                        $display ("FAIL %s: res mismatch. Expected %0d, actual %0d",
                             test_id, res_expected, res);
 
                         $finish;
@@ -338,14 +338,14 @@ module formula_tb
         if (queue.size () == 0)
         begin
             if (run_completed)
-                $display ("%s PASS", test_id);
+                $display ("PASS %s", test_id);
             else
-                $display ("%s FAIL: did not run or run was not completed",
+                $display ("FAIL %s: did not run or run was not completed",
                     test_id);
         end
         else
         begin
-            $write ("%s FAIL: data is left sitting in the model queue (%d left):",
+            $write ("FAIL %s: data is left sitting in the model queue (%d left):",
                 test_id, queue.size());
 
             for (int i = 0; i < queue.size (); i ++)
@@ -390,9 +390,8 @@ module formula_tb
     initial
     begin
         repeat (1000) @ (posedge clk);
-        $display ("%s FAIL: timeout!", test_id);
+        $display ("FAIL %s: timeout!", test_id);
         $finish;
     end
 
 endmodule
-
