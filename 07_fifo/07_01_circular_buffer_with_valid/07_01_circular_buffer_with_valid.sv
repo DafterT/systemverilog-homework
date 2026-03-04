@@ -94,10 +94,40 @@ module circular_buffer_with_valid
     output [width - 1:0] out_data
 );
 
-    // Task:
-    // Implement a variant of a circular buffer module
-    // with support for valid interface. A module should move
-    // the pointer only in cases of valid data transfer.
+    localparam logic [$clog2(depth) - 1:0] MAX_PTR = depth - 1;
 
+    logic [$clog2(depth) - 1: 0] ptr_q;
+
+    logic [width - 1 : 0] data_mem  [0 : depth - 1];
+    logic                 valid_mem [0 : depth - 1];
+
+    integer i;
+
+    always_ff @(posedge clk or posedge rst) begin
+        if (rst) begin
+            ptr_q     <= '0;
+            //out_data  <= '0;
+            //out_valid <= 1'b0;
+
+            for (i = 0; i < depth; i = i + 1) begin
+                data_mem[i]  <= '0;
+                valid_mem[i] <= 1'b0;
+            end
+        end else begin
+            //out_data  <= data_mem[ptr_q];
+            //out_valid <= valid_mem[ptr_q];
+
+            data_mem[ptr_q]  <= in_data;
+            valid_mem[ptr_q] <= in_valid;
+
+            if (ptr_q == MAX_PTR)
+                ptr_q <= '0;
+            else
+                ptr_q <= ptr_q + 1'b1;
+        end
+    end
+
+    assign out_data = data_mem[ptr_q];
+    assign out_valid = valid_mem[ptr_q];
 
 endmodule
