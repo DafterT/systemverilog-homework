@@ -30,5 +30,49 @@ module put_in_order
     // The idea of the block is kinda similar to the "parallel_to_serial" block
     // from Homework 2, but here block should also preserve the output order.
 
+    localparam int ptr_width = ( n_inputs <= 1 ) ? 1 : $clog2 ( n_inputs );
+
+    logic [ n_inputs - 1 : 0 ]                    pending_vld;
+    logic [ n_inputs - 1 : 0 ][ width - 1 : 0 ]   pending_data;
+    logic [ ptr_width - 1 : 0 ]                   rd_ptr;
+    logic                                         take_data;
+
+    always_comb
+    begin
+        take_data = pending_vld [ rd_ptr ];
+    end
+
+    assign down_vld  = take_data;
+    assign down_data = take_data ? pending_data [ rd_ptr ] : '0;
+
+    always_ff @ ( posedge clk )
+    begin
+        if ( rst )
+        begin
+            pending_vld  <= '0;
+            pending_data <= '0;
+            rd_ptr       <= '0;
+        end
+        else
+        begin
+            for ( int i = 0; i < n_inputs; i ++ )
+                if ( up_vlds [ i ] )
+                begin
+                    pending_vld  [ i ] <= 1'b1;
+                    pending_data [ i ] <= up_data [ i ];
+                end
+
+            if ( take_data )
+            begin
+                if ( ! up_vlds [ rd_ptr ] )
+                    pending_vld [ rd_ptr ] <= 1'b0;
+
+                if ( rd_ptr == ptr_width' ( n_inputs - 1 ) )
+                    rd_ptr <= '0;
+                else
+                    rd_ptr <= rd_ptr + 1'b1;
+            end
+        end
+    end
 
 endmodule

@@ -12,8 +12,8 @@ module formula_1_pipe
     input  [31:0] b,
     input  [31:0] c,
 
-    output        res_vld,
-    output [31:0] res
+    output logic        res_vld,
+    output logic [31:0] res
 );
 
     // Task:
@@ -42,5 +42,62 @@ module formula_1_pipe
     // FPGA-Systems Magazine :: FSM :: Issue ALFA (state_0)
     // You can download this issue from https://fpga-systems.ru/fsm#state_0
 
+    //------------------------------------------------------------------------
+    // Three parallel pipelined square root units
+
+    logic        isqrt_a_vld;
+    logic        isqrt_b_vld;
+    logic        isqrt_c_vld;
+    logic [15:0] isqrt_a;
+    logic [15:0] isqrt_b;
+    logic [15:0] isqrt_c;
+
+    isqrt i_isqrt_a
+    (
+        .clk   ( clk        ),
+        .rst   ( rst        ),
+        .x_vld ( arg_vld    ),
+        .x     ( a          ),
+        .y_vld ( isqrt_a_vld ),
+        .y     ( isqrt_a     )
+    );
+
+    isqrt i_isqrt_b
+    (
+        .clk   ( clk        ),
+        .rst   ( rst        ),
+        .x_vld ( arg_vld    ),
+        .x     ( b          ),
+        .y_vld ( isqrt_b_vld ),
+        .y     ( isqrt_b     )
+    );
+
+    isqrt i_isqrt_c
+    (
+        .clk   ( clk        ),
+        .rst   ( rst        ),
+        .x_vld ( arg_vld    ),
+        .x     ( c          ),
+        .y_vld ( isqrt_c_vld ),
+        .y     ( isqrt_c     )
+    );
+
+    logic        sum_vld;
+    logic [31:0] sum;
+
+    assign sum     = 32' (isqrt_a) + 32' (isqrt_b) + 32' (isqrt_c);
+    assign sum_vld = isqrt_a_vld & isqrt_b_vld & isqrt_c_vld;
+
+    always_ff @ (posedge clk)
+        if (rst)
+            res_vld <= 1'b0;
+        else
+            res_vld <= sum_vld;
+
+    always_ff @ (posedge clk)
+        if (rst)
+            res <= '0;
+        else if (sum_vld)
+            res <= sum;
 
 endmodule

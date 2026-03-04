@@ -60,6 +60,114 @@ module formula_1_pipe_aware_fsm
     // in the article by Yuri Panchul published in
     // FPGA-Systems Magazine :: FSM :: Issue ALFA (state_0)
     // You can download this issue from https://fpga-systems.ru/fsm#state_0
+    typedef enum logic [1:0]
+    {
+        st_idle   = 2'd0,
+        st_send_b = 2'd1,
+        st_send_c = 2'd2,
+        st_wait   = 2'd3
+    } state_t;
 
+    state_t state;
 
+    logic [31:0] b_r;
+    logic [31:0] c_r;
+
+    logic [31:0] sum;
+    logic [1:0]  out_cnt;
+    logic        last_output;
+
+    assign last_output = isqrt_y_vld && (out_cnt == 2'd2);
+
+    always_comb
+    begin
+        isqrt_x_vld = 1'b0;
+        isqrt_x     = '0;
+
+        case (state)
+        st_idle:
+        begin
+            if (arg_vld)
+            begin
+                isqrt_x_vld = 1'b1;
+                isqrt_x     = a;
+            end
+        end
+        st_send_b:
+        begin
+            isqrt_x_vld = 1'b1;
+            isqrt_x     = b_r;
+        end
+        st_send_c:
+        begin
+            isqrt_x_vld = 1'b1;
+            isqrt_x     = c_r;
+        end
+        endcase
+    end
+
+    always_ff @ (posedge clk)
+        if (rst)
+        begin
+            state <= st_idle;
+            b_r   <= '0;
+            c_r   <= '0;
+        end
+        else
+        begin
+            case (state)
+            st_idle:
+            begin
+                if (arg_vld)
+                begin
+                    b_r   <= b;
+                    c_r   <= c;
+                    state <= st_send_b;
+                end
+            end
+            st_send_b: state <= st_send_c;
+            st_send_c: state <= st_wait;
+            st_wait:
+            begin
+                if (last_output)
+                    state <= st_idle;
+            end
+            default: state <= st_idle;
+            endcase
+        end
+
+    always_ff @(posedge clk)
+        if (rst)
+        begin
+            sum     <= '0;
+            out_cnt <= '0;
+            res     <= '0;
+            res_vld <= 1'b0;
+        end
+        else
+        begin
+            res_vld <= 1'b0;
+
+            if (state == st_idle && arg_vld)
+            begin
+                sum     <= '0;
+                out_cnt <= '0;
+            end
+
+            if (isqrt_y_vld)
+            begin
+                if (out_cnt == 2'd2)
+                begin
+                    res     <= sum + 32'(isqrt_y);
+                    res_vld <= 1'b1;
+                    sum     <= '0;
+                    out_cnt <= '0;
+                end
+                else
+                begin
+                    sum     <= sum + 32'(isqrt_y);
+                    out_cnt <= out_cnt + 2'd1;
+                end
+            end
+        end
 endmodule

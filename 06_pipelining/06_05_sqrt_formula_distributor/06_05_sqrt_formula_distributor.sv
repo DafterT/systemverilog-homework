@@ -43,5 +43,139 @@ module sqrt_formula_distributor
     // Instantiate sufficient number of "formula_1_impl_1_top", "formula_1_impl_2_top",
     // or "formula_2_top" modules to achieve desired performance.
 
+    localparam int n_blocks = 20;
+    localparam int ptr_width = $clog2 (n_blocks);
+
+    logic [ptr_width - 1:0] wr_ptr;
+
+    logic [n_blocks - 1:0] blocks_arg_vld;
+    logic [n_blocks - 1:0] blocks_res_vld;
+    logic [31:0]           blocks_res [0:n_blocks - 1];
+
+    logic [31:0]           blocks_a [0:n_blocks - 1];
+    logic [31:0]           blocks_b [0:n_blocks - 1];
+    logic [31:0]           blocks_c [0:n_blocks - 1];
+
+    logic                  res_sel_vld;
+    logic [ptr_width - 1:0] res_sel_idx;
+
+    assign res_vld = res_sel_vld;
+    assign res     = blocks_res [res_sel_idx];
+
+    //------------------------------------------------------------------------
+    // Round-robin task distribution
+
+    always_comb
+    begin
+        blocks_arg_vld = '0;
+
+        if (arg_vld)
+            blocks_arg_vld [wr_ptr] = '1;
+    end
+
+    always_ff @ (posedge clk)
+        if (rst)
+            wr_ptr <= '0;
+        else if (arg_vld)
+            if (wr_ptr == n_blocks - 1)
+                wr_ptr <= '0;
+            else
+                wr_ptr <= wr_ptr + 1'b1;
+
+    //------------------------------------------------------------------------
+    // Per-block argument storage
+
+    always_ff @ (posedge clk)
+        if (rst)
+            for (int i = 0; i < n_blocks; i ++)
+            begin
+                blocks_a [i] <= '0;
+                blocks_b [i] <= '0;
+                blocks_c [i] <= '0;
+            end
+        else if (arg_vld)
+        begin
+            blocks_a [wr_ptr] <= a;
+            blocks_b [wr_ptr] <= b;
+            blocks_c [wr_ptr] <= c;
+        end
+
+    //------------------------------------------------------------------------
+    // Result collection (N-to-1 mux)
+
+    always_comb
+    begin
+        res_sel_vld = '0;
+        res_sel_idx = '0;
+
+        for (int i = 0; i < n_blocks; i ++)
+            if (! res_sel_vld && blocks_res_vld [i])
+            begin
+                res_sel_vld = '1;
+                res_sel_idx = ptr_width' (i);
+            end
+    end
+
+    //------------------------------------------------------------------------
+    // Computational blocks
+
+    generate
+        genvar i;
+
+        if (formula == 1 && impl == 1)
+        begin : g_formula_1_impl_1
+
+            for (i = 0; i < n_blocks; i ++)
+            begin : g_blocks
+                formula_1_impl_1_top i_formula_1_impl_1_top
+                (
+                    .clk     ( clk               ),
+                    .rst     ( rst               ),
+                    .arg_vld ( blocks_arg_vld[i] ),
+                    .a       ( blocks_arg_vld[i] ? a : blocks_a[i] ),
+                    .b       ( blocks_arg_vld[i] ? b : blocks_b[i] ),
+                    .c       ( blocks_arg_vld[i] ? c : blocks_c[i] ),
+                    .res_vld ( blocks_res_vld[i] ),
+                    .res     ( blocks_res[i]     )
+                );
+            end
+        end
+        else if (formula == 1 && impl == 2)
+        begin : g_formula_1_impl_2
+
+            for (i = 0; i < n_blocks; i ++)
+            begin : g_blocks
+                formula_1_impl_2_top i_formula_1_impl_2_top
+                (
+                    .clk     ( clk               ),
+                    .rst     ( rst               ),
+                    .arg_vld ( blocks_arg_vld[i] ),
+                    .a       ( blocks_arg_vld[i] ? a : blocks_a[i] ),
+                    .b       ( blocks_arg_vld[i] ? b : blocks_b[i] ),
+                    .c       ( blocks_arg_vld[i] ? c : blocks_c[i] ),
+                    .res_vld ( blocks_res_vld[i] ),
+                    .res     ( blocks_res[i]     )
+                );
+            end
+        end
+        else
+        begin : g_formula_2
+
+            for (i = 0; i < n_blocks; i ++)
+            begin : g_blocks
+                formula_2_top i_formula_2_top
+                (
+                    .clk     ( clk               ),
+                    .rst     ( rst               ),
+                    .arg_vld ( blocks_arg_vld[i] ),
+                    .a       ( blocks_arg_vld[i] ? a : blocks_a[i] ),
+                    .b       ( blocks_arg_vld[i] ? b : blocks_b[i] ),
+                    .c       ( blocks_arg_vld[i] ? c : blocks_c[i] ),
+                    .res_vld ( blocks_res_vld[i] ),
+                    .res     ( blocks_res[i]     )
+                );
+            end
+        end
+    endgenerate
 
 endmodule
