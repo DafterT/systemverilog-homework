@@ -33,5 +33,21 @@ module halve_tokens_with_flow_control
     // down_data      ->   0100_0100_0001_0000
     // up_ready       ->   1111_1111_0101_1000
 
+    logic odd_tokens_seen;
+    logic emit_token;
+    logic up_handshake;
+
+    assign emit_token   = up_token & odd_tokens_seen;
+    assign up_handshake = up_valid & up_ready;
+
+    always_ff @ (posedge clk)
+        if (rst)
+            odd_tokens_seen <= 1'b0;
+        else if (up_handshake & up_token)
+            odd_tokens_seen <= ~ odd_tokens_seen;
+
+    assign down_valid = up_valid;
+    assign down_data  = up_valid & emit_token & down_ready;
+    assign up_ready   = up_valid & (down_ready | ~ emit_token);
 
 endmodule

@@ -74,6 +74,40 @@ module a_plus_b_using_double_buffers
     // assign a_down_ready = ...
     // assign b_down_ready = ...
 
+    logic               a_hold_valid, b_hold_valid;
+    logic [width - 1:0] a_hold_data,  b_hold_data;
+
+    wire               sum_up_valid = a_hold_valid & b_hold_valid;
+    wire               sum_up_ready;
+    wire [width - 1:0] sum_up_data  = a_hold_data + b_hold_data;
+
+    wire a_take   = a_down_valid & a_down_ready;
+    wire b_take   = b_down_valid & b_down_ready;
+    wire sum_take = sum_up_valid & sum_up_ready;
+
+    assign a_down_ready = ~ a_hold_valid | sum_take;
+    assign b_down_ready = ~ b_hold_valid | sum_take;
+
+    always_ff @ (posedge clk or posedge rst)
+        if (rst)
+        begin
+            a_hold_valid <= 1'b0;
+            b_hold_valid <= 1'b0;
+            a_hold_data  <= '0;
+            b_hold_data  <= '0;
+        end
+        else
+        begin
+            a_hold_valid <= (a_hold_valid & ~ sum_take) | a_take;
+            b_hold_valid <= (b_hold_valid & ~ sum_take) | b_take;
+
+            if (a_take)
+                a_hold_data <= a_down_data;
+
+            if (b_take)
+                b_hold_data <= b_down_data;
+        end
+
 
     //------------------------------------------------------------------------
 
