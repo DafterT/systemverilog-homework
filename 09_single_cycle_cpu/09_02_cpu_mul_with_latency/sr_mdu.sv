@@ -28,6 +28,35 @@ module sr_mdu
     output              busy
 );
 
+    logic [n_delay - 1:0] vld_pipe;
+    logic [31:0]          result_pipe [0:n_delay - 1];
+
+    always_ff @ (posedge clk)
+    begin
+        if (rst)
+        begin
+            vld_pipe <= '0;
+
+            for (int i = 0; i < n_delay; i ++)
+                result_pipe [i] <= '0;
+        end
+        else
+        begin
+            vld_pipe [0]    <= i_vld;
+            result_pipe [0] <= srcA * srcB;
+
+            for (int i = 1; i < n_delay; i ++)
+            begin
+                vld_pipe [i]    <= vld_pipe [i - 1];
+                result_pipe [i] <= result_pipe [i - 1];
+            end
+        end
+    end
+
+    assign o_vld  = vld_pipe [n_delay - 1];
+    assign result = result_pipe [n_delay - 1];
+    assign busy   = i_vld | (| vld_pipe);
+
 endmodule
 
 //----------------------------------------------------------------------------

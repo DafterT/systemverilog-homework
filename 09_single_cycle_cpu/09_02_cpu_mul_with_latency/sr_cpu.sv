@@ -27,6 +27,8 @@ module sr_cpu
 
     wire        aluZero;
     wire        pcSrc;
+    wire        mulInstr;
+    wire        regWriteCtl;
     wire        regWrite;
     wire        aluSrc;
     wire        wdSrc;
@@ -50,11 +52,28 @@ module sr_cpu
     wire [31:0] pcBranch = pc + immB;
     wire [31:0] pcPlus4  = pc + 32'd4;
     wire [31:0] pcNext   = pcSrc ? pcBranch : pcPlus4;
+    wire [31:0] mduResult;
+    wire        mduO_vld;
+    wire        mduStart;
+    wire        pcEn     = ~ mulInstr | mduO_vld;
+
+    logic       mulPending;
+
+    assign mduStart = mulInstr & ~ mulPending;
+
+    always_ff @ (posedge clk)
+        if (rst)
+            mulPending <= 1'b0;
+        else if (mduO_vld)
+            mulPending <= 1'b0;
+        else if (mduStart)
+            mulPending <= 1'b1;
 
     register_with_rst_and_en r_pc
     (
         .clk      ( clk       ),
         .rst      ( rst       ),
+        .en       ( pcEn      ),
         .d        ( pcNext    ),
         .q        ( pc        )
     );
@@ -116,9 +135,21 @@ module sr_cpu
         .result     ( aluResult   )
     );
 
+    sr_mdu i_mdu
+    (
+        .clk        ( clk         ),
+        .rst        ( rst         ),
+        .i_vld      ( mduStart    ),
+        .srcA       ( rd1         ),
+        .srcB       ( rd2         ),
+        .o_vld      ( mduO_vld    ),
+        .result     ( mduResult   ),
+        .busy       (             )
+    );
 
-    assign wd3 =
-                wdSrc ? immU : aluResult;
+    assign regWrite = mulInstr ? mduO_vld : regWriteCtl;
+
+    assign wd3 = wdSrc ? immU : mulInstr ? mduResult : aluResult;
 
     // control
 
@@ -129,7 +160,8 @@ module sr_cpu
         .cmdF7      ( cmdF7       ),
         .aluZero    ( aluZero     ),
         .pcSrc      ( pcSrc       ),
-        .regWrite   ( regWrite    ),
+        .mulInstr   ( mulInstr    ),
+        .regWrite   ( regWriteCtl ),
         .aluSrc     ( aluSrc      ),
         .wdSrc      ( wdSrc       ),
         .aluControl ( aluControl  )

@@ -50,12 +50,19 @@ module sr_cpu
     wire [31:0] pcBranch = pc + immB;
     wire [31:0] pcPlus4  = pc + 32'd4;
     wire [31:0] pcNext   = pcSrc ? pcBranch : pcPlus4;
+    logic       imDataVld;
 
+    always_ff @ (posedge clk)
+        if (rst)
+            imDataVld <= 1'b0;
+        else
+            imDataVld <= ~ imDataVld;
 
     register_with_rst_and_en r_pc
     (
         .clk      ( clk       ),
         .rst      ( rst       ),
+        .en       ( imDataVld ),
         .d        ( pcNext    ),
         .q        ( pc        )
     );
@@ -100,8 +107,7 @@ module sr_cpu
         .rd1        ( rd1                  ),
         .rd2        ( rd2                  ),
         .wd3        ( wd3                  ),
-        .we3        ( regWrite
-        )
+        .we3        ( regWrite & imDataVld )
     );
 
     // alu
